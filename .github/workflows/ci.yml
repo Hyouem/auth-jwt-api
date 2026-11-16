@@ -1,0 +1,45 @@
+name: Java CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: auth_jwt_db
+          POSTGRES_USER: auth_jwt_user
+          POSTGRES_PASSWORD: ci_only_password
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U auth_jwt_user -d auth_jwt_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: '5433'
+      DB_NAME: auth_jwt_db
+      DB_USER: auth_jwt_user
+      DB_PASSWORD: ci_only_password
+      JWT_SECRET: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Maven verify
+        run: ./mvnw clean verify --batch-mode
